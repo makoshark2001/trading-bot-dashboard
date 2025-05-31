@@ -3,34 +3,36 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.0",
+    "@mui/material": "^5.14.0",
     "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
-    "winston": "^3.11.0",
+    "express": "^4.18.2",
+    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.8.0",
-    "@mui/material": "^5.14.0",
-    "@emotion/react": "^11.11.0",
-    "@emotion/styled": "^11.11.0",
-    "@mui/icons-material": "^5.14.0",
-    "date-fns": "^2.30.0",
-    "lodash": "^4.17.21"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "nodemon": "^3.0.1"
   },
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/main.js",
-    "client": "PORT=3010 react-scripts start",
+    "client": "cross-env PORT=3010 react-scripts start",
     "client-custom": "node scripts/start-react-custom.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "dev": "nodemon server/main.js"
+    "dev": "nodemon server/main.js",
+    "test-api": "node scripts/test-connectivity.js"
   },
   "browserslist": {
     "production": [

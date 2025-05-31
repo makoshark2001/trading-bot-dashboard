@@ -9,13 +9,6 @@ const logger = winston.createLogger({
     ),
     defaultMeta: { service: 'trading-bot-dashboard' },
     transports: [
-        new winston.transports.File({ 
-            filename: 'logs/dashboard-error.log', 
-            level: 'error' 
-        }),
-        new winston.transports.File({ 
-            filename: 'logs/dashboard.log' 
-        }),
         new winston.transports.Console({
             format: winston.format.combine(
                 winston.format.colorize(),
@@ -24,5 +17,20 @@ const logger = winston.createLogger({
         })
     ]
 });
+
+// Create logs directory if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync('logs')) {
+    fs.mkdirSync('logs');
+}
+
+// Add file transports
+logger.add(new winston.transports.File({ 
+    filename: 'logs/dashboard-error.log', 
+    level: 'error' 
+}));
+logger.add(new winston.transports.File({ 
+    filename: 'logs/dashboard.log' 
+}));
 
 module.exports = logger;
