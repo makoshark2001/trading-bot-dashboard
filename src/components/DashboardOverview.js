@@ -12,6 +12,10 @@ const DashboardOverview = ({ overview }) => {
 
     const healthyServices = overview.services?.filter(s => s.status === 'healthy').length || 0;
     const totalServices = overview.services?.length || 0;
+    
+    // Use actual data from overview instead of hardcoded values
+    const totalPairs = overview.actualPairs || overview.totalPairs || 0;
+    const activePairs = overview.activePairs || 0;
 
     return (
         <div className="card">
@@ -24,9 +28,12 @@ const DashboardOverview = ({ overview }) => {
                     textAlign: 'center'
                 }}>
                     <div style={{ fontSize: '2rem', color: '#00d4aa', fontWeight: 'bold' }}>
-                        {overview.totalPairs}
+                        {totalPairs}
                     </div>
                     <div style={{ opacity: 0.8 }}>Trading Pairs</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                        (from core service)
+                    </div>
                 </div>
                 
                 <div style={{
@@ -52,9 +59,12 @@ const DashboardOverview = ({ overview }) => {
                     textAlign: 'center'
                 }}>
                     <div style={{ fontSize: '1.5rem', color: '#ffa502', fontWeight: 'bold' }}>
-                        {overview.activePairs}
+                        {activePairs}
                     </div>
                     <div style={{ opacity: 0.8 }}>Active Pairs</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                        (with live data)
+                    </div>
                 </div>
                 
                 <div style={{
@@ -69,6 +79,21 @@ const DashboardOverview = ({ overview }) => {
                     <div style={{ opacity: 0.8 }}>System Status</div>
                 </div>
             </div>
+            
+            {/* Debug Information */}
+            {process.env.NODE_ENV === 'development' && (
+                <div style={{ 
+                    marginTop: '15px', 
+                    padding: '10px', 
+                    background: 'rgba(255, 255, 255, 0.05)', 
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    opacity: 0.7 
+                }}>
+                    <strong>Debug Info:</strong><br/>
+                    Total Pairs: {overview.totalPairs} | Actual Pairs: {overview.actualPairs} | Active Pairs: {overview.activePairs}
+                </div>
+            )}
             
             {overview.lastUpdate && (
                 <div style={{ marginTop: '15px', fontSize: '0.9rem', opacity: 0.7 }}>

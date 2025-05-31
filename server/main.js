@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const SimpleServiceProxy = require('./utils/SimpleServiceProxy');
+const CorrectedServiceProxy = require('./utils/CorrectedServiceProxy');
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize service proxy
-const serviceProxy = new SimpleServiceProxy();
+const serviceProxy = new CorrectedServiceProxy();
 
 // Basic health check
 app.get('/api/health', (req, res) => {
@@ -41,41 +41,144 @@ app.get('/api/dashboard/services', async (req, res) => {
     }
 });
 
-// Overview endpoint
+// Enhanced overview endpoint - fetch real data from core service
+// Corrected overview endpoint
 app.get('/api/dashboard/overview', async (req, res) => {
     try {
+        console.log('📊 Fetching overview data...');
+        
+        // Get service health
         const services = await serviceProxy.getAllHealth();
-        res.json({
+        console.log('🔧 Services health:', services.map(s => `${s.service}: ${s.status}`));
+        
+        // Initialize overview data
+        let overviewData = {
             timestamp: new Date().toISOString(),
             services: services,
-            totalPairs: 6,
-            activePairs: 6,
-            systemStatus: services.every(s => s.status === 'healthy') ? 'healthy' : 'degraded'
+            totalPairs: 0,
+            actualPairs: 0,
+            activePairs: 0,
+            systemStatus: services.every(s => s.status === 'healthy') ? 'healthy' : 'degraded',
+            lastUpdate: null,
+            dataSource: 'fallback'
+        };
+
+        // Get real data from core service
+        const coreService = services.find(s => s.service === 'core');
+        if (coreService && coreService.status === 'healthy') {
+            try {
+                console.log('🔍 Fetching data from core service...');
+                const coreData = await serviceProxy.getCoreData();
+                
+                if (coreData) {
+                    const pairs = serviceProxy.extractPairsFromCoreData(coreData);
+                    overviewData.totalPairs = pairs.length;
+                    overviewData.actualPairs = pairs.length;
+                    overviewData.activePairs = pairs.length; // Assume all pairs are active
+                    overviewData.lastUpdate = coreData.lastUpdate;
+                    overviewData.dataSource = 'core';
+                    
+                    console.log(`✅ Found ${pairs.length} pairs from core service`);
+                }
+            } catch (coreError) {
+                console.warn('⚠️ Failed to fetch from core service:', coreError.message);
+                overviewData.dataSource = 'fallback-core-error';
+            }
+        }
+
+        console.log('✅ Final overview data:', {
+            totalPairs: overviewData.totalPairs,
+            actualPairs: overviewData.actualPairs,
+            activePairs: overviewData.activePairs,
+            dataSource: overviewData.dataSource
         });
+
+        res.json(overviewData);
     } catch (error) {
+        console.error('❌ Overview endpoint error:', error);
         res.status(500).json({
-            error: 'Failed to fetch overview',
+            error: 'Failed to fetch overview data',
             message: error.message
         });
     }
 });
 
-// Performance endpoint
+// Performance endpoint - use dynamic pairs
 app.get('/api/dashboard/performance', async (req, res) => {
     try {
+        console.log('⚡ Fetching performance data...');
+        
+        let pairs = [];
+        const performanceData = [];
+        
+        // Get actual pairs from core service first
+        try {
+            const coreData = await serviceProxy.getCoreData();
+            if (Array.isArray(coreData)) {
+                pairs = coreData.map(item => item.pair || item.symbol).filter(Boolean);
+            } else if (coreData && coreData.pairs) {
+                pairs = Object.keys(coreData.pairs);
+            }
+            console.log('📈 Pairs from core:', pairs);
+        } catch (coreError) {
+            console.warn('⚠️ Core service unavailable, trying backtest service...');
+            try {
+                const backtestPairs = await serviceProxy.getAvailablePairs();
+                pairs = Array.isArray(backtestPairs) ? backtestPairs : (backtestPairs.pairs || []);
+                console.log('📋 Pairs from backtest:', pairs);
+            } catch (backtestError) {
+                console.warn('⚠️ All services unavailable, using empty pairs list');
+                pairs = [];
+            }
+        }
+        
+        // Get data for each pair
+        for (const pair of pairs.slice(0, 10)) { // Limit to 10 for performance
+            try {
+                const [coreData, mlPredictions] = await Promise.allSettled([
+                    serviceProxy.getCoreData(pair),
+                    serviceProxy.getMLPredictions(pair)
+                ]);
+
+                const coreResult = coreData.status === 'fulfilled' ? coreData.value : null;
+                const mlResult = mlPredictions.status === 'fulfilled' ? mlPredictions.value : null;
+
+                if (coreResult && coreResult.strategies) {
+                    performanceData.push({
+                        pair,
+                        price: coreResult.price || 0,
+                        technicalSignal: coreResult.strategies.ensemble?.signal || 'HOLD',
+                        technicalConfidence: coreResult.strategies.ensemble?.confidence || 0,
+                        mlPrediction: mlResult?.prediction || null,
+                        mlConfidence: mlResult?.confidence || 0,
+                        timestamp: coreResult.timestamp || new Date().toISOString()
+                    });
+                }
+            } catch (pairError) {
+                console.warn(`⚠️ Failed to get performance data for ${pair}:`, pairError.message);
+            }
+        }
+
+        const summary = {
+            totalPairs: performanceData.length,
+            bullishSignals: performanceData.filter(p => p.technicalSignal === 'BUY').length,
+            bearishSignals: performanceData.filter(p => p.technicalSignal === 'SELL').length,
+            averageConfidence: performanceData.length > 0 
+                ? performanceData.reduce((sum, p) => sum + p.technicalConfidence, 0) / performanceData.length 
+                : 0
+        };
+
+        console.log('⚡ Performance summary:', summary);
+
         res.json({
             timestamp: new Date().toISOString(),
-            pairs: [],
-            summary: {
-                totalPairs: 0,
-                bullishSignals: 0,
-                bearishSignals: 0,
-                averageConfidence: 0
-            }
+            pairs: performanceData,
+            summary: summary
         });
     } catch (error) {
+        console.error('❌ Performance endpoint error:', error);
         res.status(500).json({
-            error: 'Failed to fetch performance',
+            error: 'Failed to fetch performance data',
             message: error.message
         });
     }
@@ -130,12 +233,13 @@ app.use((error, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Trading Bot Dashboard running on port ${PORT}`);
-    console.log('Service URLs:', {
+    console.log(`🚀 Trading Bot Dashboard running on port ${PORT}`);
+    console.log('🔗 Service URLs:', {
         core: serviceProxy.services.core,
         ml: serviceProxy.services.ml,
         backtest: serviceProxy.services.backtest
     });
+    console.log('🌐 Access dashboard at: http://localhost:3010');
 });
 
 module.exports = app;

@@ -41,9 +41,11 @@ const PerformanceMonitor = ({ performance }) => {
             </div>
 
             {/* Pairs List */}
-            {pairs.length > 0 ? (
+            {pairs && pairs.length > 0 ? (
                 <div>
-                    <h4 style={{ marginBottom: '15px' }}>Trading Pairs</h4>
+                    <h4 style={{ marginBottom: '15px' }}>
+                        Trading Pairs ({pairs.length} active)
+                    </h4>
                     {pairs.map((pair, index) => (
                         <div key={index} style={{
                             display: 'flex',
@@ -89,8 +91,33 @@ const PerformanceMonitor = ({ performance }) => {
                     ))}
                 </div>
             ) : (
-                <div style={{ textAlign: 'center', padding: '20px', opacity: 0.6 }}>
-                    No performance data available
+                <div style={{ 
+                    textAlign: 'center', 
+                    padding: '40px 20px', 
+                    opacity: 0.6,
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '8px',
+                    border: '1px dashed rgba(255, 255, 255, 0.1)'
+                }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📊</div>
+                    <div style={{ marginBottom: '10px' }}>No performance data available</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                        Make sure the core service is running and has trading pairs configured
+                    </div>
+                </div>
+            )}
+
+            {/* Debug info in development */}
+            {process.env.NODE_ENV === 'development' && performance && (
+                <div style={{ 
+                    marginTop: '15px', 
+                    padding: '10px', 
+                    background: 'rgba(255, 255, 255, 0.05)', 
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    opacity: 0.7 
+                }}>
+                    <strong>Debug:</strong> {pairs.length} pairs loaded, {summary.totalPairs} in summary
                 </div>
             )}
         </div>
