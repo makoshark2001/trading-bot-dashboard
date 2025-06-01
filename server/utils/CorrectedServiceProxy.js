@@ -119,7 +119,7 @@ class CorrectedServiceProxy {
         return [];
     }
 
-    // Create performance data from core data structure - FIXED FOR YOUR FORMAT
+    // Create performance data from core data structure - FIXED FOR YOUR FORMAT WITH PRICE DATA
     createPerformanceDataFromCore(coreData) {
         const performanceData = [];
         
@@ -135,9 +135,38 @@ class CorrectedServiceProxy {
             try {
                 // Get current price from history (latest close price)
                 let price = 0;
-                if (coreData.history && coreData.history[pair] && coreData.history[pair].closes) {
-                    const closes = coreData.history[pair].closes;
-                    price = closes[closes.length - 1] || 0;
+                let priceData = {
+                    closes: [],
+                    timestamps: [],
+                    highs: [],
+                    lows: [],
+                    volumes: []
+                };
+
+                if (coreData.history && coreData.history[pair]) {
+                    const history = coreData.history[pair];
+                    
+                    // Extract price data
+                    if (history.closes && Array.isArray(history.closes)) {
+                        priceData.closes = history.closes;
+                        price = history.closes[history.closes.length - 1] || 0;
+                    }
+                    
+                    if (history.timestamps && Array.isArray(history.timestamps)) {
+                        priceData.timestamps = history.timestamps;
+                    }
+                    
+                    if (history.highs && Array.isArray(history.highs)) {
+                        priceData.highs = history.highs;
+                    }
+                    
+                    if (history.lows && Array.isArray(history.lows)) {
+                        priceData.lows = history.lows;
+                    }
+                    
+                    if (history.volumes && Array.isArray(history.volumes)) {
+                        priceData.volumes = history.volumes;
+                    }
                 }
 
                 // Get strategy results - YOUR FORMAT: coreData.strategyResults[pair]
@@ -196,7 +225,7 @@ class CorrectedServiceProxy {
                     timestamp: coreData.lastUpdate || new Date().toISOString(),
                     dataSource: 'core',
                     strategies: coreData.strategyResults ? coreData.strategyResults[pair] : null,
-                    priceData: priceData
+                    priceData: priceData // FIXED: Include actual price data structure
                 };
 
                 performanceData.push(performanceItem);
@@ -204,7 +233,8 @@ class CorrectedServiceProxy {
                     signal: technicalSignal,
                     confidence: technicalConfidence.toFixed(1) + '%',
                     price: price,
-                    strategies: Object.keys(coreData.strategyResults[pair] || {}).length
+                    strategies: Object.keys(coreData.strategyResults[pair] || {}).length,
+                    priceDataPoints: priceData.closes.length
                 });
 
             } catch (error) {

@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
-import PriceChart from './PriceChart'; // Import the new PriceChart component
+import PriceChart from './PriceChart';
+import EnsembleSignal from './EnsembleSignal';
 
-// [Include all the TechnicalIndicators code from before - keeping it the same]
+// Enhanced Technical Indicators Component
 const TechnicalIndicators = ({ pair, strategies }) => {
     const [activeTab, setActiveTab] = useState('trend');
 
     if (!strategies) {
         return (
             <div className="card">
-                <h4>📈 Technical Indicators - {pair}</h4>
-                <p>Loading indicator data...</p>
+                <div className="card-header" style={{
+                    background: '#21262d',
+                    borderBottom: '1px solid #30363d',
+                    padding: '12px 16px'
+                }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem' }}>📈 Technical Indicators - {pair}</h4>
+                </div>
+                <div className="card-body" style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ color: '#8b949e' }}>Loading indicator data...</div>
+                </div>
             </div>
         );
     }
@@ -67,7 +76,7 @@ const TechnicalIndicators = ({ pair, strategies }) => {
         }
     };
 
-    // Function to create individual indicator card
+    // Enhanced Indicator Card Component
     const IndicatorCard = ({ indicator, data }) => {
         if (!data) {
             return (
@@ -76,10 +85,11 @@ const TechnicalIndicators = ({ pair, strategies }) => {
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     borderRadius: '8px',
                     padding: '12px',
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    transition: 'all 0.2s ease'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong>{indicatorNames[indicator]}</strong>
+                        <strong style={{ fontSize: '0.9rem' }}>{indicatorNames[indicator]}</strong>
                         <span style={{
                             padding: '4px 8px',
                             borderRadius: '4px',
@@ -101,10 +111,11 @@ const TechnicalIndicators = ({ pair, strategies }) => {
                     border: '1px solid rgba(255, 71, 87, 0.3)',
                     borderRadius: '8px',
                     padding: '12px',
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    transition: 'all 0.2s ease'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong>{indicatorNames[indicator]}</strong>
+                        <strong style={{ fontSize: '0.9rem' }}>{indicatorNames[indicator]}</strong>
                         <span style={{
                             padding: '4px 8px',
                             borderRadius: '4px',
@@ -335,8 +346,13 @@ const PerformanceMonitor = ({ performance }) => {
 
     const handlePairClick = (pair) => {
         setSelectedPair(pair);
+        setShowIndicators(false);
+        setShowChart(false);
+    };
+
+    const handleShowIndicators = () => {
         setShowIndicators(true);
-        setShowChart(false); // Reset chart view when selecting new pair
+        setShowChart(false);
     };
 
     const handleShowChart = () => {
@@ -386,7 +402,7 @@ const PerformanceMonitor = ({ performance }) => {
                             <h4 style={{ margin: 0 }}>
                                 Trading Pairs ({pairs.length} active)
                             </h4>
-                            {(showIndicators || showChart) && (
+                            {(showIndicators || showChart || selectedPair) && (
                                 <button
                                     onClick={handleBackToSummary}
                                     style={{
@@ -473,7 +489,7 @@ const PerformanceMonitor = ({ performance }) => {
                         <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📊</div>
                         <div style={{ marginBottom: '10px' }}>No performance data available</div>
                         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
-                            Make sure the core service is running and has trading pairs configured
+                            Make sure the core service is running and has trading pairs configured.
                         </div>
                     </div>
                 )}
@@ -493,6 +509,14 @@ const PerformanceMonitor = ({ performance }) => {
                 )}
             </div>
 
+            {/* Ensemble Signal Display - Show prominently when pair is selected */}
+            {selectedPair && !showIndicators && !showChart && (
+                <EnsembleSignal 
+                    pair={selectedPair.pair} 
+                    strategies={selectedPair.strategies}
+                />
+            )}
+
             {/* Detailed View Controls */}
             {selectedPair && !showIndicators && !showChart && (
                 <div className="card" style={{ marginTop: '20px' }}>
@@ -506,7 +530,7 @@ const PerformanceMonitor = ({ performance }) => {
                     <div className="card-body" style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
                             <button
-                                onClick={() => setShowIndicators(true)}
+                                onClick={handleShowIndicators}
                                 style={{
                                     background: 'linear-gradient(135deg, #58a6ff, #4a90e2)',
                                     border: 'none',
