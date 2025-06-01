@@ -93,15 +93,102 @@ const RealTimeStats = ({ realTimeData }) => {
 // Main Dashboard Component (wrapped with notification context)
 function DashboardContent() {
     const { addNotification } = useNotifications();
+    const [showSettings, setShowSettings] = useState(false);
+    const [dashboardSettings, setDashboardSettings] = useState({
+        updateFrequency: 30000,
+        soundAlerts: true,
+        pushNotifications: true,
+        confidenceThreshold: 0.7,
+        theme: 'dark',
+        chartAnimations: true,
+        autoRefresh: true,
+        showDebugInfo: false
+    });
+
+    // Load settings from localStorage on mount
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('dashboardSettings');
+        if (savedSettings) {
+            try {
+                const parsed = JSON.parse(savedSettings);
+                setDashboardSettings(prev => ({ ...prev, ...parsed }));
+            } catch (error) {
+                console.warn('Failed to parse saved settings:', error);
+            }
+        }
+    }, []);
+
+    // Apply theme to document
+    useEffect(() => {
+        const root = document.documentElement;
+        
+        // Remove existing theme classes
+        root.classList.remove('theme-dark', 'theme-light', 'theme-blue', 'theme-matrix', 'theme-sunset');
+        
+        // Add current theme class
+        root.classList.add(`theme-${dashboardSettings.theme}`);
+        
+        // Apply CSS custom properties for themes
+        const themes = {
+            dark: {
+                '--bg-primary': '#0a0a0a',
+                '--bg-secondary': '#1a1a1a',
+                '--text-primary': '#ffffff',
+                '--text-secondary': 'rgba(255, 255, 255, 0.7)',
+                '--border-color': 'rgba(255, 255, 255, 0.1)',
+                '--card-bg': 'rgba(255, 255, 255, 0.05)'
+            },
+            light: {
+                '--bg-primary': '#ffffff',
+                '--bg-secondary': '#f7fafc',
+                '--text-primary': '#2d3748',
+                '--text-secondary': '#718096',
+                '--border-color': 'rgba(0, 0, 0, 0.1)',
+                '--card-bg': 'rgba(0, 0, 0, 0.02)'
+            },
+            blue: {
+                '--bg-primary': '#0f172a',
+                '--bg-secondary': '#1e293b',
+                '--text-primary': '#f1f5f9',
+                '--text-secondary': 'rgba(241, 245, 249, 0.7)',
+                '--border-color': 'rgba(59, 130, 246, 0.3)',
+                '--card-bg': 'rgba(59, 130, 246, 0.1)'
+            },
+            matrix: {
+                '--bg-primary': '#001100',
+                '--bg-secondary': '#003300',
+                '--text-primary': '#00ff00',
+                '--text-secondary': 'rgba(0, 255, 0, 0.7)',
+                '--border-color': 'rgba(0, 255, 0, 0.3)',
+                '--card-bg': 'rgba(0, 255, 0, 0.05)'
+            },
+            sunset: {
+                '--bg-primary': '#1a0f1a',
+                '--bg-secondary': '#4a1a2a',
+                '--text-primary': '#ffeaa7',
+                '--text-secondary': 'rgba(255, 234, 167, 0.7)',
+                '--border-color': 'rgba(253, 121, 168, 0.3)',
+                '--card-bg': 'rgba(253, 121, 168, 0.1)'
+            }
+        };
+
+        const themeVars = themes[dashboardSettings.theme] || themes.dark;
+        Object.entries(themeVars).forEach(([property, value]) => {
+            root.style.setProperty(property, value);
+        });
+    }, [dashboardSettings.theme]);
+
     const { 
         data, 
         loading, 
         error, 
         refresh,
         connectionStatus 
-    } = useRealTimeData();
-
-    const [showSettings, setShowSettings] = useState(false);
+    } = useRealTimeData({
+        updateFrequency: dashboardSettings.updateFrequency,
+        autoRefresh: dashboardSettings.autoRefresh,
+        confidenceThreshold: dashboardSettings.confidenceThreshold
+    });
 
     const {
         overview,
@@ -112,6 +199,12 @@ function DashboardContent() {
         wsConnected,
         realTimeData
     } = data;
+
+    // Handle settings changes
+    const handleSettingsChange = (newSettings) => {
+        setDashboardSettings(newSettings);
+        addNotification('Settings updated successfully', 'success', 3000);
+    };
 
     // Manual refresh function
     const handleRefresh = async () => {
@@ -188,15 +281,17 @@ function DashboardContent() {
             {/* Enhanced Header with Real-time Status */}
             <header style={{ 
                 padding: '20px', 
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                background: 'linear-gradient(45deg, rgba(0,212,170,0.1), rgba(0,184,148,0.1))'
+                borderBottom: '1px solid var(--border-color)',
+                background: `linear-gradient(45deg, ${dashboardSettings.theme === 'matrix' ? 'rgba(0,255,0,0.1)' : 'rgba(0,212,170,0.1)'}, ${dashboardSettings.theme === 'matrix' ? 'rgba(0,200,0,0.1)' : 'rgba(0,184,148,0.1)'})`
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
                             <h1 style={{ 
                                 fontSize: '2.5rem',
-                                background: 'linear-gradient(45deg, #00d4aa, #00b894)',
+                                background: dashboardSettings.theme === 'matrix' ? 
+                                    'linear-gradient(45deg, #00ff00, #00cc00)' : 
+                                    'linear-gradient(45deg, #00d4aa, #00b894)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 margin: 0
@@ -207,7 +302,8 @@ function DashboardContent() {
                         </div>
                         <p style={{ 
                             opacity: 0.7,
-                            margin: 0
+                            margin: 0,
+                            color: 'var(--text-secondary)'
                         }}>
                             Advanced Cryptocurrency Trading Analytics & ML Predictions
                         </p>
@@ -242,8 +338,8 @@ function DashboardContent() {
                                 className="btn btn-secondary"
                                 style={{
                                     background: 'transparent',
-                                    border: '1px solid #8b949e',
-                                    color: '#8b949e',
+                                    border: '1px solid var(--text-secondary)',
+                                    color: 'var(--text-secondary)',
                                     fontSize: '0.9rem',
                                     padding: '8px 16px'
                                 }}
@@ -252,11 +348,11 @@ function DashboardContent() {
                             </button>
                         </div>
                         
-                        <div style={{ fontSize: '0.9rem', opacity: 0.6 }}>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.6, color: 'var(--text-secondary)' }}>
                             Last Update: {lastUpdate ? new Date(lastUpdate).toLocaleTimeString() : 'Never'}
                         </div>
                         
-                        <div style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '2px' }}>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '2px', color: 'var(--text-secondary)' }}>
                             <span style={{ 
                                 color: services.filter(s => s.status === 'healthy').length === services.length ? '#00d4aa' : '#ffa502' 
                             }}>
@@ -295,14 +391,16 @@ function DashboardContent() {
                 textAlign: 'center', 
                 padding: '20px', 
                 opacity: 0.5,
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                marginTop: '40px'
+                borderTop: '1px solid var(--border-color)',
+                marginTop: '40px',
+                color: 'var(--text-secondary)'
             }}>
                 <p>
                     🚀 Trading Bot Dashboard v1.0 | 
                     Services: {services.filter(s => s.status === 'healthy').length}/{services.length} Online |
                     Mode: {updateMode === 'websocket' ? '🟢 Real-time' : '🟡 Polling'} |
                     Last Updated: {lastUpdate ? new Date(lastUpdate).toLocaleString() : 'Never'} |
+                    Theme: {dashboardSettings.theme.charAt(0).toUpperCase() + dashboardSettings.theme.slice(1)} |
                     {' '}
                     <span style={{ 
                         color: overview?.systemStatus === 'healthy' ? '#00d4aa' : '#ffa502' 
@@ -331,10 +429,12 @@ function DashboardContent() {
             {/* Settings Modal */}
             <SettingsModal 
                 isOpen={showSettings} 
-                onClose={() => setShowSettings(false)} 
+                onClose={() => setShowSettings(false)}
+                onSettingsChange={handleSettingsChange}
+                currentSettings={dashboardSettings}
             />
 
-            {/* Add CSS animations */}
+            {/* Add CSS animations and theme variables */}
             <style jsx>{`
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
@@ -343,6 +443,13 @@ function DashboardContent() {
                 
                 .btn {
                     transition: all 0.2s ease;
+                    background: var(--card-bg);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    cursor: pointer;
+                    font-weight: 500;
                 }
                 
                 .btn:hover {
@@ -352,6 +459,10 @@ function DashboardContent() {
                 
                 .dashboard-container {
                     position: relative;
+                    background: var(--bg-primary);
+                    color: var(--text-primary);
+                    min-height: 100vh;
+                    transition: all 0.3s ease;
                 }
                 
                 /* Real-time pulse animation for live data */
