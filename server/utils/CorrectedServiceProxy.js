@@ -71,17 +71,6 @@ class CorrectedServiceProxy {
                 hasData: !!response.data
             });
 
-            // Based on your ExpressApp.js, the response structure should be:
-            // {
-            //   uptime: "...",
-            //   pairs: ["XMR", "RVN", ...],
-            //   history: { "XMR": {...}, "RVN": {...} },
-            //   strategyResults: { "XMR": {...}, "RVN": {...} },
-            //   stats: {...},
-            //   status: "running",
-            //   lastUpdate: "..."
-            // }
-
             if (response.data) {
                 console.log(`📊 Core data structure:`, {
                     hasPairs: !!response.data.pairs,
@@ -99,14 +88,14 @@ class CorrectedServiceProxy {
         }
     }
 
-    // Extract pairs from core data structure
+    // Extract pairs from core data structure - FIXED FOR YOUR FORMAT
     extractPairsFromCoreData(coreData) {
         if (!coreData) {
             console.log('❌ No core data provided');
             return [];
         }
 
-        // Based on your ExpressApp.js, pairs should be in coreData.pairs array
+        // YOUR CORE SERVICE FORMAT: pairs are in coreData.pairs array
         if (coreData.pairs && Array.isArray(coreData.pairs)) {
             console.log(`✅ Found ${coreData.pairs.length} pairs in coreData.pairs:`, coreData.pairs);
             return coreData.pairs;
@@ -130,7 +119,7 @@ class CorrectedServiceProxy {
         return [];
     }
 
-    // Create performance data from core data structure
+    // Create performance data from core data structure - FIXED FOR YOUR FORMAT
     createPerformanceDataFromCore(coreData) {
         const performanceData = [];
         
@@ -144,39 +133,56 @@ class CorrectedServiceProxy {
 
         for (const pair of pairs) {
             try {
-                // Get price from history
+                // Get current price from history (latest close price)
                 let price = 0;
                 if (coreData.history && coreData.history[pair] && coreData.history[pair].closes) {
                     const closes = coreData.history[pair].closes;
                     price = closes[closes.length - 1] || 0;
                 }
 
-                // Get strategy results
+                // Get strategy results - YOUR FORMAT: coreData.strategyResults[pair]
                 let technicalSignal = 'HOLD';
                 let technicalConfidence = 0;
                 
                 if (coreData.strategyResults && coreData.strategyResults[pair]) {
                     const strategies = coreData.strategyResults[pair];
+                    console.log(`🔍 Processing strategies for ${pair}:`, Object.keys(strategies));
                     
-                    // Look for ensemble signal or calculate from individual strategies
-                    if (strategies.ensemble) {
-                        technicalSignal = strategies.ensemble.suggestion?.toUpperCase() || 'HOLD';
-                        technicalConfidence = (strategies.ensemble.confidence || 0) * 100;
-                    } else {
-                        // Calculate from individual strategies
-                        const validStrategies = Object.values(strategies).filter(s => s && !s.error && s.suggestion);
-                        if (validStrategies.length > 0) {
-                            const buyCount = validStrategies.filter(s => s.suggestion === 'buy').length;
-                            const sellCount = validStrategies.filter(s => s.suggestion === 'sell').length;
+                    // Calculate ensemble signal from all strategies
+                    const validStrategies = [];
+                    let totalConfidence = 0;
+                    let buySignals = 0;
+                    let sellSignals = 0;
+                    
+                    // Process each strategy indicator
+                    for (const [strategyName, strategyData] of Object.entries(strategies)) {
+                        if (strategyData && strategyData.suggestion && strategyData.confidence !== undefined) {
+                            validStrategies.push(strategyData);
+                            totalConfidence += strategyData.confidence || 0;
                             
-                            if (buyCount > sellCount) {
-                                technicalSignal = 'BUY';
-                            } else if (sellCount > buyCount) {
-                                technicalSignal = 'SELL';
+                            const suggestion = strategyData.suggestion.toLowerCase();
+                            if (suggestion === 'buy') {
+                                buySignals++;
+                            } else if (suggestion === 'sell') {
+                                sellSignals++;
                             }
                             
-                            technicalConfidence = validStrategies.reduce((sum, s) => sum + (s.confidence || 0), 0) / validStrategies.length * 100;
+                            console.log(`  📈 ${strategyName}: ${strategyData.suggestion} (${(strategyData.confidence * 100).toFixed(1)}%)`);
                         }
+                    }
+                    
+                    // Determine ensemble signal
+                    if (validStrategies.length > 0) {
+                        if (buySignals > sellSignals) {
+                            technicalSignal = 'BUY';
+                        } else if (sellSignals > buySignals) {
+                            technicalSignal = 'SELL';
+                        } else {
+                            technicalSignal = 'HOLD';
+                        }
+                        
+                        // Average confidence across all strategies
+                        technicalConfidence = (totalConfidence / validStrategies.length) * 100;
                     }
                 }
 
@@ -194,8 +200,9 @@ class CorrectedServiceProxy {
                 performanceData.push(performanceItem);
                 console.log(`✅ Created performance data for ${pair}:`, {
                     signal: technicalSignal,
-                    confidence: technicalConfidence.toFixed(1),
-                    price: price
+                    confidence: technicalConfidence.toFixed(1) + '%',
+                    price: price,
+                    strategies: Object.keys(coreData.strategyResults[pair] || {}).length
                 });
 
             } catch (error) {
@@ -203,6 +210,7 @@ class CorrectedServiceProxy {
             }
         }
 
+        console.log(`📊 Performance summary: ${performanceData.length} pairs processed`);
         return performanceData;
     }
 
