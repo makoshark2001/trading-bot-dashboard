@@ -136,7 +136,8 @@ function DashboardContent() {
                 '--text-primary': '#ffffff',
                 '--text-secondary': 'rgba(255, 255, 255, 0.7)',
                 '--border-color': 'rgba(255, 255, 255, 0.1)',
-                '--card-bg': 'rgba(255, 255, 255, 0.05)'
+                '--card-bg': 'rgba(255, 255, 255, 0.05)',
+                '--logo-color': '#ffffff'
             },
             light: {
                 '--bg-primary': '#ffffff',
@@ -144,7 +145,8 @@ function DashboardContent() {
                 '--text-primary': '#2d3748',
                 '--text-secondary': '#718096',
                 '--border-color': 'rgba(0, 0, 0, 0.1)',
-                '--card-bg': 'rgba(0, 0, 0, 0.02)'
+                '--card-bg': 'rgba(0, 0, 0, 0.02)',
+                '--logo-color': '#2d3748'
             },
             blue: {
                 '--bg-primary': '#0f172a',
@@ -152,7 +154,8 @@ function DashboardContent() {
                 '--text-primary': '#f1f5f9',
                 '--text-secondary': 'rgba(241, 245, 249, 0.7)',
                 '--border-color': 'rgba(59, 130, 246, 0.3)',
-                '--card-bg': 'rgba(59, 130, 246, 0.1)'
+                '--card-bg': 'rgba(59, 130, 246, 0.1)',
+                '--logo-color': '#f1f5f9'
             },
             matrix: {
                 '--bg-primary': '#001100',
@@ -160,7 +163,8 @@ function DashboardContent() {
                 '--text-primary': '#00ff00',
                 '--text-secondary': 'rgba(0, 255, 0, 0.7)',
                 '--border-color': 'rgba(0, 255, 0, 0.3)',
-                '--card-bg': 'rgba(0, 255, 0, 0.05)'
+                '--card-bg': 'rgba(0, 255, 0, 0.05)',
+                '--logo-color': '#00ff00'
             },
             sunset: {
                 '--bg-primary': '#1a0f1a',
@@ -168,7 +172,8 @@ function DashboardContent() {
                 '--text-primary': '#ffeaa7',
                 '--text-secondary': 'rgba(255, 234, 167, 0.7)',
                 '--border-color': 'rgba(253, 121, 168, 0.3)',
-                '--card-bg': 'rgba(253, 121, 168, 0.1)'
+                '--card-bg': 'rgba(253, 121, 168, 0.1)',
+                '--logo-color': '#ffeaa7'
             }
         };
 
@@ -176,7 +181,12 @@ function DashboardContent() {
         Object.entries(themeVars).forEach(([property, value]) => {
             root.style.setProperty(property, value);
         });
+
+        // Force re-render of logo
+        setLogoKey(prev => prev + 1);
     }, [dashboardSettings.theme]);
+
+    const [logoKey, setLogoKey] = useState(0);
 
     const { 
         data, 
@@ -287,16 +297,21 @@ function DashboardContent() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
-                            <h1 style={{ 
-                                fontSize: '2.5rem',
-                                background: dashboardSettings.theme === 'matrix' ? 
-                                    'linear-gradient(45deg, #00ff00, #00cc00)' : 
-                                    'linear-gradient(45deg, #00d4aa, #00b894)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                margin: 0
-                            }}>
-                                🤖 Trading Bot Dashboard
+                            <h1 key={logoKey} style={{ fontSize: '2.5rem', margin: 0, display: 'flex', alignItems: 'center' }}>
+                                <span style={{
+                                    fontSize: '2rem',
+                                    marginRight: '8px',
+                                    color: 'var(--logo-color)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI Emoji", "Roboto", sans-serif'
+                                }}>
+                                    🤖
+                                </span>
+                                <span style={{
+                                    color: 'var(--logo-color)',
+                                    fontWeight: 'bold'
+                                }}>
+                                    Trading Bot Dashboard
+                                </span>
                             </h1>
                             <ConnectionStatusIndicator connectionStatus={connectionStatus} />
                         </div>
@@ -395,7 +410,7 @@ function DashboardContent() {
                 marginTop: '40px',
                 color: 'var(--text-secondary)'
             }}>
-                <p>
+                <p style={{ margin: 0 }}>
                     🚀 Trading Bot Dashboard v1.0 | 
                     Services: {services.filter(s => s.status === 'healthy').length}/{services.length} Online |
                     Mode: {updateMode === 'websocket' ? '🟢 Real-time' : '🟡 Polling'} |
@@ -420,7 +435,7 @@ function DashboardContent() {
                     )}
                     {realTimeData && (realTimeData.priceCount > 0 || realTimeData.signalCount > 0) && (
                         <span style={{ marginLeft: '10px', opacity: 0.7 }}>
-                            • {realTimeData.priceCount + realTimeData.signalCount} live data streams
+                            • {(realTimeData.priceCount || 0) + (realTimeData.signalCount || 0)} live data streams
                         </span>
                     )}
                 </div>
