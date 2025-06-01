@@ -14,6 +14,11 @@ app.use(express.json());
 // Initialize service proxy
 const serviceProxy = new CorrectedServiceProxy();
 
+// Add this debug logging:
+console.log('🚀 Dashboard startup - using ServiceProxy methods:');
+console.log('  - createPerformanceDataFromCore:', typeof serviceProxy.createPerformanceDataFromCore);
+console.log('  - extractPairsFromCoreData:', typeof serviceProxy.extractPairsFromCoreData);
+
 // Basic health check
 app.get('/api/health', (req, res) => {
     res.json({
@@ -103,59 +108,38 @@ app.get('/api/dashboard/overview', async (req, res) => {
     }
 });
 
-// Performance endpoint - use dynamic pairs
+// Performance endpoint - FIXED VERSION
 app.get('/api/dashboard/performance', async (req, res) => {
     try {
         console.log('⚡ Fetching performance data...');
         
-        let pairs = [];
-        const performanceData = [];
+        // Get core data once and process it
+        const coreData = await serviceProxy.getCoreData();
         
-        // Get actual pairs from core service first
-        try {
-            const coreData = await serviceProxy.getCoreData();
-            if (Array.isArray(coreData)) {
-                pairs = coreData.map(item => item.pair || item.symbol).filter(Boolean);
-            } else if (coreData && coreData.pairs) {
-                pairs = Object.keys(coreData.pairs);
-            }
-            console.log('📈 Pairs from core:', pairs);
-        } catch (coreError) {
-            console.warn('⚠️ Core service unavailable, trying backtest service...');
-            try {
-                const backtestPairs = await serviceProxy.getAvailablePairs();
-                pairs = Array.isArray(backtestPairs) ? backtestPairs : (backtestPairs.pairs || []);
-                console.log('📋 Pairs from backtest:', pairs);
-            } catch (backtestError) {
-                console.warn('⚠️ All services unavailable, using empty pairs list');
-                pairs = [];
-            }
+        if (!coreData) {
+            return res.status(500).json({
+                error: 'No data from core service',
+                message: 'Core service returned empty data'
+            });
         }
         
-        // Get data for each pair
-        for (const pair of pairs.slice(0, 10)) { // Limit to 10 for performance
+        // Use the CorrectedServiceProxy method to process the data
+        const performanceData = serviceProxy.createPerformanceDataFromCore(coreData);
+        
+        if (performanceData.length === 0) {
+            console.warn('⚠️ No performance data generated from core data');
+        }
+        
+        // Try to enhance with ML predictions
+        for (const item of performanceData) {
             try {
-                const [coreData, mlPredictions] = await Promise.allSettled([
-                    serviceProxy.getCoreData(pair),
-                    serviceProxy.getMLPredictions(pair)
-                ]);
-
-                const coreResult = coreData.status === 'fulfilled' ? coreData.value : null;
-                const mlResult = mlPredictions.status === 'fulfilled' ? mlPredictions.value : null;
-
-                if (coreResult && coreResult.strategies) {
-                    performanceData.push({
-                        pair,
-                        price: coreResult.price || 0,
-                        technicalSignal: coreResult.strategies.ensemble?.signal || 'HOLD',
-                        technicalConfidence: coreResult.strategies.ensemble?.confidence || 0,
-                        mlPrediction: mlResult?.prediction || null,
-                        mlConfidence: mlResult?.confidence || 0,
-                        timestamp: coreResult.timestamp || new Date().toISOString()
-                    });
+                const mlResult = await serviceProxy.getMLPredictions(item.pair);
+                if (mlResult && mlResult.prediction !== undefined) {
+                    item.mlPrediction = mlResult.prediction;
+                    item.mlConfidence = (mlResult.confidence || 0) * 100;
                 }
-            } catch (pairError) {
-                console.warn(`⚠️ Failed to get performance data for ${pair}:`, pairError.message);
+            } catch (mlError) {
+                console.log(`⚠️ ML data unavailable for ${item.pair}`);
             }
         }
 

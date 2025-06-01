@@ -194,7 +194,9 @@ class CorrectedServiceProxy {
                     mlPrediction: null, // Will be filled by ML service if available
                     mlConfidence: 0,
                     timestamp: coreData.lastUpdate || new Date().toISOString(),
-                    dataSource: 'core'
+                    dataSource: 'core',
+                    strategies: coreData.strategyResults ? coreData.strategyResults[pair] : null,
+                    priceData: priceData
                 };
 
                 performanceData.push(performanceItem);
