@@ -447,6 +447,7 @@ const PerformanceMonitor = ({ performance }) => {
                                         ${pair.price?.toFixed(4) || 'N/A'}
                                     </div>
                                 </div>
+
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{
                                         color: pair.technicalSignal === 'BUY' ? '#00d4aa' : 
@@ -459,10 +460,20 @@ const PerformanceMonitor = ({ performance }) => {
                                         {pair.technicalConfidence.toFixed(1)}% confidence
                                     </div>
                                 </div>
+                                
                                 <div style={{ textAlign: 'right' }}>
                                     {pair.mlPrediction !== null && pair.mlPrediction !== undefined ? (
                                         // ✅ ML data available
                                         <>
+
+                                            <div style={{
+                                                color: pair.mlSignal === 'BUY' ? '#00d4aa' : 
+                                                    pair.mlSignal === 'SELL' ? '#ff4757' : '#ffa502',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {pair.mlSignal}
+                                            </div>
+
                                             <div style={{ fontSize: '0.9rem', color: '#3742fa' }}>
                                                 ML: {pair.mlPrediction > 0 ? '+' : ''}{(pair.mlPrediction * 100).toFixed(2)}%
                                             </div>

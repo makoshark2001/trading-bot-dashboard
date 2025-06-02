@@ -137,6 +137,7 @@ app.get('/api/dashboard/performance', async (req, res) => {
                 if (mlResult && mlResult.prediction !== undefined) {
                     item.mlPrediction = mlResult.prediction.probability;
                     item.mlConfidence = (mlResult.prediction.confidence || 0) * 100;
+                    item.mlSignal = mlResult.prediction.signal
                 }
             } catch (mlError) {
                 console.log(`⚠️ ML data unavailable for ${item.pair}`);

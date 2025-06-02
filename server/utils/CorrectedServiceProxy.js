@@ -228,6 +228,7 @@ class CorrectedServiceProxy {
                     price: price,
                     technicalSignal: technicalSignal,
                     technicalConfidence: technicalConfidence,
+                    mlSignal:null, // Will be filled by ML service if available
                     mlPrediction: null, // Will be filled by ML service if available
                     mlConfidence: 0,
                     timestamp: coreData.lastUpdate || new Date().toISOString(),
