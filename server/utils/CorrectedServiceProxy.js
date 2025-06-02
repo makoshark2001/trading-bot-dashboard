@@ -182,6 +182,7 @@ class CorrectedServiceProxy {
                     let totalConfidence = 0;
                     let buySignals = 0;
                     let sellSignals = 0;
+                    let neutralSignals = 0; // ✅ Now tracking neutral signals
                     
                     // Process each strategy indicator
                     for (const [strategyName, strategyData] of Object.entries(strategies)) {
@@ -194,24 +195,31 @@ class CorrectedServiceProxy {
                                 buySignals++;
                             } else if (suggestion === 'sell') {
                                 sellSignals++;
+                            } else {
+                                neutralSignals++; // ✅ Count hold/neutral signals
                             }
                             
                             console.log(`  📈 ${strategyName}: ${strategyData.suggestion} (${(strategyData.confidence * 100).toFixed(1)}%)`);
                         }
                     }
                     
-                    // Determine ensemble signal
+                    // ✅ UNIFIED LOGIC: Same as frontend ensemble calculation
                     if (validStrategies.length > 0) {
-                        if (buySignals > sellSignals) {
+                        // Must beat BOTH other categories to win (same as frontend)
+                        if (buySignals > sellSignals && buySignals > neutralSignals) {
                             technicalSignal = 'BUY';
-                        } else if (sellSignals > buySignals) {
+                        } else if (sellSignals > buySignals && sellSignals > neutralSignals) {
                             technicalSignal = 'SELL';
                         } else {
-                            technicalSignal = 'HOLD';
+                            technicalSignal = 'HOLD'; // Any tie or neutral majority = HOLD
                         }
                         
                         // Average confidence across all strategies
                         technicalConfidence = (totalConfidence / validStrategies.length) * 100;
+                        
+                        console.log(`✅ Backend Signal Calculation for ${pair}:`);
+                        console.log(`   Buy: ${buySignals}, Sell: ${sellSignals}, Neutral: ${neutralSignals}`);
+                        console.log(`   Result: ${technicalSignal} (${technicalConfidence.toFixed(1)}%)`);
                     }
                 }
 
