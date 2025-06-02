@@ -460,13 +460,24 @@ const PerformanceMonitor = ({ performance }) => {
                                     </div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    {pair.mlPrediction && (
+                                    {pair.mlPrediction !== null && pair.mlPrediction !== undefined ? (
+                                        // ✅ ML data available
                                         <>
                                             <div style={{ fontSize: '0.9rem', color: '#3742fa' }}>
                                                 ML: {pair.mlPrediction > 0 ? '+' : ''}{(pair.mlPrediction * 100).toFixed(2)}%
                                             </div>
                                             <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
                                                 {pair.mlConfidence.toFixed(1)}% conf
+                                            </div>
+                                        </>
+                                    ) : (
+                                        // ❌ ML data not available
+                                        <>
+                                            <div style={{ fontSize: '0.9rem', color: '#8b949e', opacity: 0.6 }}>
+                                                ML: N/A
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>
+                                                Service offline
                                             </div>
                                         </>
                                     )}

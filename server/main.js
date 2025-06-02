@@ -135,8 +135,8 @@ app.get('/api/dashboard/performance', async (req, res) => {
             try {
                 const mlResult = await serviceProxy.getMLPredictions(item.pair);
                 if (mlResult && mlResult.prediction !== undefined) {
-                    item.mlPrediction = mlResult.prediction;
-                    item.mlConfidence = (mlResult.confidence || 0) * 100;
+                    item.mlPrediction = mlResult.prediction.probability;
+                    item.mlConfidence = (mlResult.prediction.confidence || 0) * 100;
                 }
             } catch (mlError) {
                 console.log(`⚠️ ML data unavailable for ${item.pair}`);
