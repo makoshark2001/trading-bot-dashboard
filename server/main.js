@@ -134,13 +134,29 @@ app.get('/api/dashboard/performance', async (req, res) => {
         for (const item of performanceData) {
             try {
                 const mlResult = await serviceProxy.getMLPredictions(item.pair);
-                if (mlResult && mlResult.prediction !== undefined) {
-                    item.mlPrediction = mlResult.prediction.probability;
-                    item.mlConfidence = (mlResult.prediction.confidence || 0) * 100;
-                    item.mlSignal = mlResult.prediction.signal
+                if (mlResult && mlResult.prediction) {
+                    // Parse the ML service response structure
+                    const prediction = mlResult.prediction;
+                    
+                    // Extract the prediction value (it's in prediction.prediction['0'])
+                    const predictionValue = prediction.prediction && prediction.prediction['0'] 
+                        ? prediction.prediction['0'] 
+                        : 0;
+                    
+                    item.mlPrediction = predictionValue;
+                    item.mlConfidence = (prediction.confidence || 0) * 100;
+                    item.mlSignal = prediction.signal || 'HOLD';
+                    item.mlDirection = prediction.direction || 'neutral';
+                    
+                    console.log(`✅ ML data for ${item.pair}:`, {
+                        prediction: predictionValue,
+                        confidence: item.mlConfidence.toFixed(1) + '%',
+                        signal: item.mlSignal,
+                        direction: prediction.direction
+                    });
                 }
             } catch (mlError) {
-                console.log(`⚠️ ML data unavailable for ${item.pair}`);
+                console.log(`⚠️ ML data unavailable for ${item.pair}:`, mlError.message);
             }
         }
 

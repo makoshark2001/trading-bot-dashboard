@@ -462,23 +462,32 @@ const PerformanceMonitor = ({ performance }) => {
                                 </div>
                                 
                                 <div style={{ textAlign: 'right' }}>
-                                    {pair.mlPrediction !== null && pair.mlPrediction !== undefined ? (
-                                        // ✅ ML data available
+                                    {pair.mlPrediction !== null && pair.mlPrediction !== undefined && pair.mlSignal ? (
+                                        // ✅ ML data available - Enhanced display
                                         <>
-
                                             <div style={{
                                                 color: pair.mlSignal === 'BUY' ? '#00d4aa' : 
-                                                    pair.mlSignal === 'SELL' ? '#ff4757' : '#ffa502',
-                                                fontWeight: 'bold'
+                                                      pair.mlSignal === 'SELL' ? '#ff4757' : '#ffa502',
+                                                fontWeight: 'bold',
+                                                fontSize: '0.9rem'
                                             }}>
-                                                {pair.mlSignal}
+                                                ML: {pair.mlSignal}
                                             </div>
-
-                                            <div style={{ fontSize: '0.9rem', color: '#3742fa' }}>
-                                                ML: {pair.mlPrediction > 0 ? '+' : ''}{(pair.mlPrediction * 100).toFixed(2)}%
+                                            <div style={{ fontSize: '0.8rem', color: '#3742fa', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                                                {pair.mlDirection && (
+                                                    <span style={{ 
+                                                        color: pair.mlDirection === 'up' ? '#00d4aa' : 
+                                                              pair.mlDirection === 'down' ? '#ff4757' : '#8b949e'
+                                                    }}>
+                                                        {pair.mlDirection === 'up' ? '↗️' : pair.mlDirection === 'down' ? '↘️' : '➡️'}
+                                                    </span>
+                                                )}
+                                                <span>
+                                                    {(pair.mlPrediction * 100).toFixed(1)}%
+                                                </span>
                                             </div>
                                             <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
-                                                {pair.mlConfidence.toFixed(1)}% conf
+                                                {pair.mlConfidence.toFixed(1)}% confidence
                                             </div>
                                         </>
                                     ) : (
