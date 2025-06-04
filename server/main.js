@@ -135,13 +135,11 @@ app.get('/api/dashboard/performance', async (req, res) => {
             try {
                 const mlResult = await serviceProxy.getMLPredictions(item.pair);
                 if (mlResult && mlResult.prediction) {
-                    // Parse the ML service response structure
+                    // Parse the NEW ML service response structure (v2.1.0-ensemble-enabled)
                     const prediction = mlResult.prediction;
                     
-                    // Extract the prediction value (it's in prediction.prediction['0'])
-                    const predictionValue = prediction.prediction && prediction.prediction['0'] 
-                        ? prediction.prediction['0'] 
-                        : 0;
+                    // NEW FORMAT: prediction.prediction is now a direct number (not an object)
+                    const predictionValue = prediction.prediction || 0;
                     
                     item.mlPrediction = predictionValue;
                     item.mlConfidence = (prediction.confidence || 0) * 100;
@@ -149,7 +147,7 @@ app.get('/api/dashboard/performance', async (req, res) => {
                     item.mlDirection = prediction.direction || 'neutral';
                     
                     console.log(`✅ ML data for ${item.pair}:`, {
-                        prediction: predictionValue,
+                        prediction: predictionValue.toFixed(4),
                         confidence: item.mlConfidence.toFixed(1) + '%',
                         signal: item.mlSignal,
                         direction: prediction.direction
